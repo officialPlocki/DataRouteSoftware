@@ -12,6 +12,7 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
+import java.util.Base64;
 import java.util.Scanner;
 
 public class ClientPanel {
@@ -29,10 +30,11 @@ public class ClientPanel {
         JButton uploadButton = new JButton("Select File");
         uploadButton.setFont(new Font("Arial", Font.PLAIN, 20));
         uploadButton.addActionListener(e -> {
+            System.out.println("opening file chooser");
             JFileChooser chooser = new JFileChooser();
             int val = chooser.showOpenDialog(null);
             if(val == JFileChooser.APPROVE_OPTION) {
-                System.out.println(chooser.getSelectedFile());
+                System.out.println("uploading file");
                 try {
                     System.out.println("connecting");
                     URLConnection connection = new URL(Main.getClient().getConfig().get("serverConfig").getString("address") + "/files?type=upload&key=" + Main.getClient().getConfig().get("serverConfig").getString("privateKey") + "&format=" + FilenameUtils.getExtension( chooser.getSelectedFile().getName())).openConnection();
@@ -40,7 +42,14 @@ public class ClientPanel {
                     System.out.println("connected");
                     OutputStream os = connection.getOutputStream();
                     System.out.println("uploading");
-                    Files.copy(chooser.getSelectedFile().getAbsoluteFile().toPath(), os);
+                    byte[] bytes = Files.readAllBytes(chooser.getSelectedFile().getAbsoluteFile().toPath());
+
+                    String str = Base64.getEncoder().encodeToString(bytes);
+
+                    os.write(str.getBytes());
+                    os.flush();
+                    os.close();
+
                     System.out.println("uploaded");
 
 
@@ -65,6 +74,8 @@ public class ClientPanel {
                     JButton copy = new JButton("Copy Link");
                     copy.setFont(new Font("Arial", Font.PLAIN, 20));
                     copy.addActionListener(e2 -> {
+                        frame.dispose();
+                        System.out.println("copied link");
                         Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(url), null);
                     });
                     panel.add(copy);
@@ -72,6 +83,8 @@ public class ClientPanel {
                     JButton open = new JButton("Open Link");
                     open.setFont(new Font("Arial", Font.PLAIN, 20));
                     open.addActionListener(e2 -> {
+                        System.out.println("opening link");
+                        frame.dispose();
                         try {
                             Desktop.getDesktop().browse(new URL(url).toURI());
                         } catch (Exception e3) {
